@@ -9,7 +9,7 @@ def test_model(model, val_loader, criterion, device):
             targets = targets.view(-1,2)
             targets = targets.to(device)
 
-            out = model(data)
+            out, attention_weights = model(data)
             loss = criterion(out, targets)
             total_val_loss += loss.item()
 

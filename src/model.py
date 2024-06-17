@@ -1,19 +1,34 @@
 import torch
 import torch.nn.functional as F
-from torch_geometric.nn import GATConv
 from torch_geometric.nn import GATv2Conv
 
 class GATNet(torch.nn.Module):
     def __init__(self):
         super(GATNet, self).__init__()
-        self.conv1 = GATv2Conv(in_channels=2, out_channels=16, heads=8, concat=True, edge_dim=3)
-        self.conv2 = GATv2Conv(in_channels=16 * 8, out_channels=16, heads=4, concat=True, edge_dim=3)
-        self.conv3 = GATv2Conv(in_channels=16 * 4, out_channels=2, heads=1, concat=False, edge_dim=3)
+        # Define each GATv2Conv layer separately
+        self.conv_layer1 = GATv2Conv(in_channels=2, out_channels=16, heads=8, concat=True, edge_dim=3)
+        self.conv_layer2 = GATv2Conv(in_channels=16*8, out_channels=64, heads=8, concat=True, edge_dim=3)
+        self.conv_layer3 = GATv2Conv(in_channels=64*8, out_channels=32, heads=4, concat=True, edge_dim=3)
+        self.conv_layer4 = GATv2Conv(in_channels=32*4, out_channels=2, heads=1, concat=False, edge_dim=3)
 
     def forward(self, data):
-        x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
-        x = F.elu(self.conv1(x, edge_index, edge_attr))
-        x = F.elu(self.conv2(x, edge_index, edge_attr))
-        x = self.conv3(x, edge_index, edge_attr)
+        X, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
+        attention_weights = []
 
-        return x
+        # Process each layer sequentially
+        X, attn_weights = self.conv_layer1(X, edge_index, edge_attr, return_attention_weights=True)
+        attention_weights.append(attn_weights)
+        X = F.elu(X)
+
+        X, attn_weights = self.conv_layer2(X, edge_index, edge_attr, return_attention_weights=True)
+        attention_weights.append(attn_weights)
+        X = F.elu(X)
+
+        X, attn_weights = self.conv_layer3(X, edge_index, edge_attr, return_attention_weights=True)
+        attention_weights.append(attn_weights)
+        X = F.elu(X)
+
+        X, attn_weights = self.conv_layer4(X, edge_index, edge_attr, return_attention_weights=True)
+        attention_weights.append(attn_weights)
+        
+        return X, attention_weights

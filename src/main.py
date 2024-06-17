@@ -46,7 +46,7 @@ def main():
     epochs_no_improve = 0
 
     train_losses, val_losses, test_losses = [], [], []
-    for epoch in range(100):
+    for epoch in range(10000):
         train_loss = train_model(model, train_loader, criterion, optimizer, device, epoch)
         val_loss = test_model(model, val_loader, criterion, device)
         test_loss = test_model(model, test_loader, criterion, device)
