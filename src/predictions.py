@@ -5,8 +5,6 @@ import numpy as np
 import networkx as nx
 from model import GATNet
 from data_loader import create_dataset
-from train import train_model
-from test import test_model
 
 def load_data_and_model(model_path, data_path):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -59,7 +57,7 @@ def visualize_attention_weights(node_features, edge_index, attention_weights, la
 
 def main():
     model_path = 'checkpoints/best_model.pth'
-    data_path = 'raw_data/network_results.h5'
+    data_path = 'power_flow_data.h5'
     model, first_data, device = load_data_and_model(model_path, data_path)
     predictions, attention_weights = evaluate_model(model, first_data, device)
 
