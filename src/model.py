@@ -13,22 +13,18 @@ class GATNet(torch.nn.Module):
 
     def forward(self, data):
         X, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
-        attention_weights = []
 
         # Process each layer sequentially
-        X, attn_weights = self.conv_layer1(X, edge_index, edge_attr, return_attention_weights=True)
-        attention_weights.append(attn_weights)
+        X = self.conv_layer1(X, edge_index, edge_attr)
         X = F.elu(X)
 
-        X, attn_weights = self.conv_layer2(X, edge_index, edge_attr, return_attention_weights=True)
-        attention_weights.append(attn_weights)
+        X = self.conv_layer2(X, edge_index, edge_attr)
         X = F.elu(X)
 
-        X, attn_weights = self.conv_layer3(X, edge_index, edge_attr, return_attention_weights=True)
-        attention_weights.append(attn_weights)
+        X = self.conv_layer3(X, edge_index, edge_attr)
         X = F.elu(X)
 
-        X, attn_weights = self.conv_layer4(X, edge_index, edge_attr, return_attention_weights=True)
-        attention_weights.append(attn_weights)
+        X, attention_weights = self.conv_layer4(X, edge_index, edge_attr, return_attention_weights=True)
         
+
         return X, attention_weights

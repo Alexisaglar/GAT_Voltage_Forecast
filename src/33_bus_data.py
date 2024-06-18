@@ -8,10 +8,8 @@ import pandapower.networks as pn
 def run_power_flow():
     # Load the pandapower case 33bw network
     net = pn.case33bw()
-
     # Run power flow analysis
     pp.runpp(net)
-
     return net
 
 def extract_data_from_pandapower(net):
@@ -22,13 +20,16 @@ def extract_data_from_pandapower(net):
                           net.line.r_ohm_per_km.values,
                           net.line.length_km.values]).T
 
+    line_data = line_data[net.line['in_service'].values]
     # Extract bus data (voltage magnitude, angle)
     bus_data = np.array([net.res_bus.vm_pu.values,
                          net.res_bus.va_degree.values]).T
+    bus_data = bus_data[net.bus['in_service'].values]
 
     # Extract load data (p_mw, q_mvar)
     load_data = np.zeros((len(net.bus), 2))
     load_data[net.load.bus.values] = np.array([net.load.p_mw.values, net.load.q_mvar.values]).T
+    load_data = load_data[net.bus['in_service'].values]
 
     return line_data, bus_data, load_data
 
@@ -81,7 +82,7 @@ def create_dataset_from_h5py(file):
                         target_bus = time_step_group['res_bus'][:, :2]
 
                         # extract node features (p and q)
-                        node_features = time_step_group['load'][:, 1:3]
+                        node_features = time_step_group['load'][:, :2]
 
                         # create edge index  (from_bus and to_bus in first two columns)
                         edge_index = np.vstack((line_data[:, 0], line_data[:, 1])).astype(int)
@@ -103,6 +104,7 @@ def create_dataset_from_h5py(file):
 net = run_power_flow()
 line_data, bus_data, load_data = extract_data_from_pandapower(net)
 
+print(line_data, bus_data, load_data)
 # Save the data to an HDF5 file
 h5_file = 'power_flow_data.h5'
 save_data_to_h5py(h5_file, line_data, bus_data, load_data)
