@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from model import GATNet
 from data_loader import create_dataset
+import numpy as np
 
 def load_data_and_model(model_path, data_path):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -11,8 +12,8 @@ def load_data_and_model(model_path, data_path):
     model.eval()
 
     data_list, target_list = create_dataset(data_path)
-    # return model, data_list[0], device  # Only return the first data point
-    return model, data_list, device  # Only return the first data point
+    return model, data_list[100], device  # Only return the first data point
+    # return model, data_list, device  # Only return the first data point
 
 def evaluate_model(model, data, device):
     model.eval()  # Set the model to evaluation mode
@@ -24,24 +25,38 @@ def evaluate_model(model, data, device):
     return output, edges, scores
 
 def visualize_graph(edges, scores):
-    G = nx.Graph()
-    i = 0
-    for edge, weight in zip(edges, scores):  # Iterate through edges and corresponding weights
-        i+=1
-        if i > 32:
-            G.add_edge(edge[0], edge[1], weight=weight)  # Add directed edge with weight
+    G = nx.Graph()  # Use nx.DiGraph() if edges are directed
+    for edge, weight in zip(edges, scores):
+        G.add_edge(edge[0], edge[1], weight=weight)
 
-    plt.figure(figsize=(12, 8))  # Create a new figure and set its size
-    ax = plt.gca()  # Get tedgeshe current axes, creating them if necessary
+    plt.figure(figsize=(14, 10))
+    ax = plt.gca()
 
-    pos = nx.spring_layout(G, k=1, iterations=1000)  # Node positioning
-    weights = [G[u][v]['weight'] for u, v in G.edges()]  # Edge weights for visualization
+    pos = nx.spring_layout(G, k=0.9, iterations=600, weight='weight')
+    weights = [G[u][v]['weight'] for u, v in G.edges()]
+    edge_colors = plt.cm.YlOrRd(np.array(weights) / max(weights))  # Normalize for coloring
 
-    # Draw the graph
-    nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=100,
-            edge_color=weights, edge_cmap=plt.cm.YlOrRd, width=3, arrowstyle='-|>', arrowsize=10, ax=ax)
+    # Node sizes can also be scaled by some property (e.g., degree)
+    node_sizes = [10 + 10 * G.degree(n) for n in G.nodes()]
+    nx.draw_networkx_nodes(G, pos, node_size=node_sizes, node_color='skyblue')
 
-    # Create colorbar
+    # Draw regular edges
+    normal_edges = [(u, v) for u, v in G.edges() if u != v]
+    nx.draw_networkx_edges(G, pos, edgelist=normal_edges, width=np.array(weights) * 5,
+                           edge_color=edge_colors, arrowsize=10)
+
+    # Specifically draw self-loops with a different, smaller connectionstyle
+    loop_edges = [(u, v) for u, v in G.edges() if u == v]
+    if loop_edges:
+        loop_weights = [G[u][v]['weight'] for u, v in loop_edges]
+        loop_edge_colors = plt.cm.YlOrRd(np.array(loop_weights) / max(weights))
+        nx.draw_networkx_edges(G, pos, edgelist=loop_edges, width=np.array(loop_weights) * 1.8,
+                               edge_color=loop_edge_colors, arrowsize=10, connectionstyle='arc3,rad=0.005')  # Smaller radius for loops
+
+    # Labels and title
+    nx.draw_networkx_labels(G, pos)
+    
+    # Enhanced colorbar
     sm = plt.cm.ScalarMappable(cmap=plt.cm.YlOrRd, norm=plt.Normalize(vmin=min(scores), vmax=max(scores)))
     sm.set_array([])
     plt.colorbar(sm, orientation='vertical', label='Attention Weights', ax=ax)
@@ -52,9 +67,10 @@ def visualize_graph(edges, scores):
 def main():
     model_path = 'checkpoints/best_model.pth'
     # data_path = 'raw_data/network_results.h5'
-    data_path = 'power_flow_data.h5'
+    data_path = 'raw_data/33_bus_results.h5'
     model, first_data, device = load_data_and_model(model_path, data_path)
     print(first_data)
+    # first_data = torch.tensor(first_data)
     _, edges, scores = evaluate_model(model, first_data, device)
     visualize_graph(edges, scores)
 

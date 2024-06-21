@@ -96,7 +96,8 @@ def create_dataset_from_h5py(file):
                         # create data object
                         data = Data(x=node_features, edge_index=edge_index, edge_attr=edge_features)
                         data_list.append(data)
-                        target_list.append(targets)
+                        # target_list.append(targets)
+                        target_list.append(target_bus)
 
     return data_list, target_list
 
@@ -111,3 +112,4 @@ save_data_to_h5py(h5_file, line_data, bus_data, load_data)
 
 # Create dataset from the HDF5 file
 data_list, target_list = create_dataset_from_h5py(h5_file)
+print(data_list, target_list)
